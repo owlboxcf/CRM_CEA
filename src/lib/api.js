@@ -1,0 +1,128 @@
+import { supabase } from './supabase';
+
+// ---------- Auth ----------
+
+export async function signIn(email, password) {
+  return supabase.auth.signInWithPassword({ email, password });
+}
+
+export async function signOut() {
+  return supabase.auth.signOut();
+}
+
+export async function getSession() {
+  const { data } = await supabase.auth.getSession();
+  return data.session;
+}
+
+export function onAuthStateChange(callback) {
+  const { data } = supabase.auth.onAuthStateChange((_event, session) => callback(session));
+  return data.subscription;
+}
+
+export async function resetPassword(email) {
+  return supabase.auth.resetPasswordForEmail(email);
+}
+
+// ---------- Perfil ----------
+
+export async function getMeuPerfil(userId) {
+  const { data, error } = await supabase.from('perfis').select('*').eq('id', userId).single();
+  if (error) throw error;
+  return data;
+}
+
+export async function getVendedores() {
+  const { data, error } = await supabase.from('perfis').select('*').eq('perfil', 'Vendedor').order('nome');
+  if (error) throw error;
+  return data;
+}
+
+// ---------- Planos ----------
+
+export async function getPlanos() {
+  const { data, error } = await supabase.from('planos').select('*').order('id');
+  if (error) throw error;
+  return data;
+}
+
+// ---------- Leads ----------
+
+export async function getLeads() {
+  const { data, error } = await supabase.from('leads').select('*').order('data_entrada', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function createLead(lead) {
+  const { data, error } = await supabase.from('leads').insert(lead).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateLeadStatus(id, status) {
+  const { data, error } = await supabase.from('leads').update({ status }).eq('id', id).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteLead(id) {
+  // ON DELETE CASCADE no banco já remove as atividades vinculadas.
+  // As vendas vinculadas ficam (id_lead vira null), conforme a regra de negócio.
+  const { error } = await supabase.from('leads').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ---------- Atividades ----------
+
+export async function getAtividades() {
+  const { data, error } = await supabase.from('atividades').select('*').order('data', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function createAtividade(atividade) {
+  const { data, error } = await supabase.from('atividades').insert(atividade).select().single();
+  if (error) throw error;
+  return data;
+}
+
+// ---------- Vendas ----------
+
+export async function getVendas() {
+  const { data, error } = await supabase.from('vendas').select('*').order('data', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function createVenda(venda) {
+  const { data, error } = await supabase.from('vendas').insert(venda).select().single();
+  if (error) throw error;
+  return data;
+}
+
+// ---------- Ranking (função no banco, não expõe comissão pra quem não é gestor) ----------
+
+export async function getRanking() {
+  const { data, error } = await supabase.rpc('ranking_vendedores');
+  if (error) throw error;
+  return data;
+}
+
+// ---------- Ponto ----------
+
+export async function getPontoRegistros() {
+  const { data, error } = await supabase.from('ponto_registros').select('*').order('data_hora', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function registrarPonto(idVendedor, tipo) {
+  const { data, error } = await supabase
+    .from('ponto_registros')
+    .insert({ id_vendedor: idVendedor, tipo })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}

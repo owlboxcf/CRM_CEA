@@ -1,0 +1,87 @@
+import React, { useState } from 'react';
+import { C } from '../theme';
+import { StatRow, MonthFilter } from './UI';
+import { STATUS_LEAD, fmtMoney, monthKey, diasDesde } from '../lib/business';
+
+export function ResumoTab({ leads, atividades, vendas, planos }) {
+  const [mes, setMes] = useState('all');
+  const vendasFiltradas = mes === 'all' ? vendas : vendas.filter((v) => monthKey(v.data) === mes);
+
+  const planoPorNome = Object.fromEntries(planos.map((p) => [p.nome, p]));
+
+  const contratado = vendasFiltradas
+    .filter((v) => {
+      const p = planoPorNome[v.plano];
+      return p && p.forma !== 'Recorrência';
+    })
+    .reduce((s, v) => s + Number(v.valor_total || 0), 0);
+
+  const recorrenciaMensal = vendasFiltradas
+    .filter((v) => {
+      const p = planoPorNome[v.plano];
+      return p && p.forma === 'Recorrência';
+    })
+    .reduce((s, v) => s + Number(v.valor_total || 0), 0);
+
+  const projetado = contratado + recorrenciaMensal * 12;
+  const receitaCaixa = vendasFiltradas.reduce((s, v) => s + Number(v.receita_recebida || 0), 0);
+  const comissaoVend = vendasFiltradas.reduce((s, v) => s + Number(v.comissao_vendedor || 0), 0);
+  const comissaoProf = vendasFiltradas.reduce((s, v) => s + Number(v.comissao_professor || 0), 0);
+
+  const leadsAtivos = leads.filter((l) => l.status !== 'Convertido' && l.status !== 'Perdido');
+  const semContato = leadsAtivos.filter((l) => {
+    const tem = atividades.some((a) => a.id_lead === l.id);
+    return !tem && diasDesde(l.data_entrada) > 3;
+  });
+  const semAtividade7d = leadsAtivos.filter((l) => {
+    const ats = atividades.filter((a) => a.id_lead === l.id);
+    if (ats.length === 0) return false;
+    const ultima = Math.max(...ats.map((a) => new Date(a.data).getTime()));
+    return diasDesde(new Date(ultima).toISOString()) > 7;
+  });
+
+  return (
+    <div className="px-4 pt-4 pb-24">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-black" style={{ color: C.text }}>
+          Resumo gerencial
+        </h2>
+        <MonthFilter items={vendas} dateField="data" value={mes} onChange={setMes} />
+      </div>
+
+      <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: C.accent }}>
+        Faturamento
+      </p>
+      <div className="rounded-xl px-4 mb-5" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
+        <StatRow label="Contratado (real)" value={fmtMoney(contratado)} />
+        <StatRow label="Receita recebida (caixa)" value={fmtMoney(receitaCaixa)} />
+        <StatRow label="Projetado (com recorrência ×12)" value={fmtMoney(projetado)} />
+      </div>
+
+      <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: C.accent }}>
+        Comissões
+      </p>
+      <div className="rounded-xl px-4 mb-5" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
+        <StatRow label="Total vendedores" value={fmtMoney(comissaoVend)} />
+        <StatRow label="Total professores" value={fmtMoney(comissaoProf)} />
+      </div>
+
+      <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: C.accent }}>
+        Funil
+      </p>
+      <div className="rounded-xl px-4 mb-5" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
+        {STATUS_LEAD.map((s) => (
+          <StatRow key={s} label={s} value={leads.filter((l) => l.status === s).length} />
+        ))}
+      </div>
+
+      <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: C.red }}>
+        Alertas
+      </p>
+      <div className="rounded-xl px-4" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
+        <StatRow label="Leads sem 1º contato há +3 dias" value={semContato.length} />
+        <StatRow label="Leads sem atividade há +7 dias" value={semAtividade7d.length} />
+      </div>
+    </div>
+  );
+}
