@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, ClipboardList, ShoppingBag, Clock, Trophy, AlertTriangle } from 'lucide-react';
+import { LogOut, ClipboardList, ShoppingBag, Clock, Trophy, AlertTriangle, Settings } from 'lucide-react';
 import { C } from '../theme';
 import { OwlMark } from './UI';
 
@@ -35,6 +35,7 @@ export function TabBar({ active, setActive, isGestor }) {
     { id: 'ranking', label: 'Ranking', icon: Trophy },
   ];
   if (isGestor) tabs.push({ id: 'resumo', label: 'Resumo', icon: AlertTriangle });
+  if (isGestor) tabs.push({ id: 'config', label: 'Config', icon: Settings });
   return (
     <div
       className="fixed bottom-0 left-0 right-0 flex justify-center z-30"

@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Plus, Phone, ShoppingBag, ChevronRight } from 'lucide-react';
 import { C, inputStyle } from '../theme';
 import { Field, Input, Select, Sheet, PrimaryButton, StatusBadge } from './UI';
-import { CANAIS, TURNOS, RESULTADOS, fmtDate, fmtMoney } from '../lib/business';
+import { TURNOS, fmtDate, fmtMoney } from '../lib/business';
 
-export function LeadForm({ onClose, onSave, meuPerfil, isGestor, vendedores }) {
+export function LeadForm({ onClose, onSave, meuPerfil, isGestor, vendedores, canaisCaptacao }) {
   const [nome, setNome] = useState('');
   const [contato, setContato] = useState('');
   const [canal, setCanal] = useState('');
@@ -39,7 +39,7 @@ export function LeadForm({ onClose, onSave, meuPerfil, isGestor, vendedores }) {
         <Input value={contato} onChange={setContato} placeholder="(19) 99999-0000" />
       </Field>
       <Field label="Canal de captação">
-        <Select value={canal} onChange={setCanal} options={CANAIS} />
+        <Select value={canal} onChange={setCanal} options={canaisCaptacao} />
       </Field>
       <Field label="Turno de interesse">
         <Select value={turno} onChange={setTurno} options={TURNOS} />
@@ -70,7 +70,7 @@ export function LeadForm({ onClose, onSave, meuPerfil, isGestor, vendedores }) {
   );
 }
 
-export function AtividadeForm({ leadId, onClose, onSave, meuPerfil }) {
+export function AtividadeForm({ leadId, onClose, onSave, meuPerfil, canaisContato, resultados }) {
   const [canal, setCanal] = useState('');
   const [resultado, setResultado] = useState('');
   const [proximaAcao, setProximaAcao] = useState('');
@@ -96,10 +96,10 @@ export function AtividadeForm({ leadId, onClose, onSave, meuPerfil }) {
   return (
     <Sheet title="Registrar contato" onClose={onClose}>
       <Field label="Canal usado">
-        <Select value={canal} onChange={setCanal} options={CANAIS} />
+        <Select value={canal} onChange={setCanal} options={canaisContato} />
       </Field>
       <Field label="Resultado">
-        <Select value={resultado} onChange={setResultado} options={RESULTADOS} />
+        <Select value={resultado} onChange={setResultado} options={resultados} />
       </Field>
       <Field label="Próxima ação (opcional)">
         <Input value={proximaAcao} onChange={setProximaAcao} placeholder="Ex: ligar de novo sexta" />

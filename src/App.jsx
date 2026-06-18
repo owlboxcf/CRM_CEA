@@ -8,6 +8,7 @@ import { VendasTab, VendaForm } from './components/Vendas';
 import { PontoTab } from './components/Ponto';
 import { RankingTab } from './components/Ranking';
 import { ResumoTab } from './components/Resumo';
+import { ConfiguracoesTab } from './components/Configuracoes';
 import {
   getSession,
   onAuthStateChange,
@@ -26,6 +27,9 @@ import {
   getRanking,
   getPontoRegistros,
   registrarPonto,
+  getTodasOpcoes,
+  createOpcao,
+  deleteOpcao,
 } from './lib/api';
 
 function TelaCarregando() {
@@ -47,6 +51,7 @@ export default function App() {
   const [vendas, setVendas] = useState([]);
   const [pontos, setPontos] = useState([]);
   const [ranking, setRanking] = useState([]);
+  const [opcoes, setOpcoes] = useState([]);
   const [activeTab, setActiveTab] = useState('leads');
   const [loadingDados, setLoadingDados] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState('');
@@ -70,7 +75,7 @@ export default function App() {
     try {
       const perfil = await getMeuPerfil(session.user.id);
       setMeuPerfil(perfil);
-      const [vend, pl, l, a, v, r, p] = await Promise.all([
+      const [vend, pl, l, a, v, r, p, op] = await Promise.all([
         getVendedores(),
         getPlanos(),
         getLeads(),
@@ -78,6 +83,7 @@ export default function App() {
         getVendas(),
         getRanking(),
         getPontoRegistros(),
+        getTodasOpcoes(),
       ]);
       setVendedores(vend);
       setPlanos(pl);
@@ -86,6 +92,7 @@ export default function App() {
       setVendas(v);
       setRanking(r);
       setPontos(p);
+      setOpcoes(op);
     } catch (e) {
       console.error(e);
       setErroCarregamento(
@@ -124,6 +131,9 @@ export default function App() {
   const isGestor = meuPerfil.perfil === 'Gestor';
   const meusLeads = isGestor ? leads : leads.filter((l) => l.id_vendedor === meuPerfil.id);
   const minhasVendas = isGestor ? vendas : vendas.filter((v) => v.id_vendedor === meuPerfil.id);
+  const canaisCaptacao = opcoes.filter((o) => o.tipo === 'canal_captacao').map((o) => o.valor);
+  const canaisContato = opcoes.filter((o) => o.tipo === 'canal_contato').map((o) => o.valor);
+  const resultados = opcoes.filter((o) => o.tipo === 'resultado').map((o) => o.valor);
 
   async function handleAddLead(leadData) {
     const novo = await createLead(leadData);
@@ -164,6 +174,16 @@ export default function App() {
     setSelectedLead(null);
   }
 
+  async function handleAddOpcao(tipo, valor) {
+    const nova = await createOpcao(tipo, valor);
+    setOpcoes((prev) => [...prev, nova]);
+  }
+
+  async function handleRemoveOpcao(id) {
+    await deleteOpcao(id);
+    setOpcoes((prev) => prev.filter((o) => o.id !== id));
+  }
+
   async function handleRegistrarPonto(tipo) {
     const novo = await registrarPonto(meuPerfil.id, tipo);
     setPontos((prev) => [novo, ...prev]);
@@ -200,6 +220,9 @@ export default function App() {
         {activeTab === 'resumo' && isGestor && (
           <ResumoTab leads={leads} atividades={atividades} vendas={vendas} planos={planos} />
         )}
+        {activeTab === 'config' && isGestor && (
+          <ConfiguracoesTab opcoes={opcoes} onAddOpcao={handleAddOpcao} onRemoveOpcao={handleRemoveOpcao} />
+        )}
 
         <TabBar active={activeTab} setActive={setActiveTab} isGestor={isGestor} />
 
@@ -208,6 +231,7 @@ export default function App() {
             meuPerfil={meuPerfil}
             isGestor={isGestor}
             vendedores={vendedores}
+            canaisCaptacao={canaisCaptacao}
             onClose={() => setShowLeadForm(false)}
             onSave={handleAddLead}
           />
@@ -232,6 +256,8 @@ export default function App() {
           <AtividadeForm
             leadId={selectedLead.id}
             meuPerfil={meuPerfil}
+            canaisContato={canaisContato}
+            resultados={resultados}
             onClose={() => setShowAtividadeForm(false)}
             onSave={handleAddAtividade}
           />

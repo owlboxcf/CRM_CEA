@@ -109,6 +109,30 @@ export async function getRanking() {
   return data;
 }
 
+// ---------- Opções configuráveis ----------
+
+export async function getTodasOpcoes() {
+  const { data, error } = await supabase
+    .from('opcoes_configuraveis')
+    .select('*')
+    .order('tipo')
+    .order('ordem')
+    .order('valor');
+  if (error) throw error;
+  return data;
+}
+
+export async function createOpcao(tipo, valor) {
+  const { data, error } = await supabase.from('opcoes_configuraveis').insert({ tipo, valor }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteOpcao(id) {
+  const { error } = await supabase.from('opcoes_configuraveis').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // ---------- Ponto ----------
 
 export async function getPontoRegistros() {

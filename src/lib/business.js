@@ -1,7 +1,5 @@
-export const CANAIS = ['Instagram', 'WhatsApp', 'Ligação', 'Folheto', 'Campanha', 'Indicação'];
 export const TURNOS = ['Manhã', 'Tarde', 'Noite'];
 export const STATUS_LEAD = ['Novo', 'Em Contato', 'Interessado', 'Visita Agendada', 'Visitou', 'Convertido', 'Perdido'];
-export const RESULTADOS = ['Sem Resposta', 'Conversou', 'Interessado', 'Agendou Visita', 'Visitou', 'Não Tem Interesse'];
 export const TIPOS_TRANSACAO = ['Nova', 'Renovação', 'Reativação'];
 
 export function calcVenda(plano, tipo) {

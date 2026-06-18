@@ -237,6 +237,61 @@ create policy "ponto: cada um só registra o próprio"
   to authenticated
   with check (id_vendedor = auth.uid());
 
+-- ------------------------------------------------------------
+-- 7. OPÇÕES CONFIGURÁVEIS (listas editáveis pelo Gestor: canais
+-- de captação, canais de contato, resultados de atividade).
+-- São só sugestões para os formulários — os campos canal/resultado
+-- em leads/atividades continuam texto livre, sem FK pra aqui.
+-- ------------------------------------------------------------
+create table public.opcoes_configuraveis (
+  id uuid primary key default gen_random_uuid(),
+  tipo text not null check (tipo in ('canal_captacao', 'canal_contato', 'resultado')),
+  valor text not null,
+  ordem int not null default 0,
+  created_at timestamptz not null default now(),
+  unique (tipo, valor)
+);
+
+alter table public.opcoes_configuraveis enable row level security;
+
+create policy "opcoes: qualquer logado pode ver"
+  on public.opcoes_configuraveis for select
+  to authenticated
+  using (true);
+
+create policy "opcoes: só gestor cria"
+  on public.opcoes_configuraveis for insert
+  to authenticated
+  with check (is_gestor());
+
+create policy "opcoes: só gestor atualiza"
+  on public.opcoes_configuraveis for update
+  to authenticated
+  using (is_gestor());
+
+create policy "opcoes: só gestor exclui"
+  on public.opcoes_configuraveis for delete
+  to authenticated
+  using (is_gestor());
+
+insert into public.opcoes_configuraveis (tipo, valor, ordem) values
+  ('canal_captacao', 'Instagram', 1),
+  ('canal_captacao', 'WhatsApp', 2),
+  ('canal_captacao', 'Ligação', 3),
+  ('canal_captacao', 'Folheto', 4),
+  ('canal_captacao', 'Campanha', 5),
+  ('canal_captacao', 'Indicação', 6),
+  ('canal_contato', 'Ligação', 1),
+  ('canal_contato', 'WhatsApp', 2),
+  ('canal_contato', 'Visita presencial', 3),
+  ('canal_contato', 'Instagram', 4),
+  ('resultado', 'Sem Resposta', 1),
+  ('resultado', 'Conversou', 2),
+  ('resultado', 'Interessado', 3),
+  ('resultado', 'Agendou Visita', 4),
+  ('resultado', 'Visitou', 5),
+  ('resultado', 'Não Tem Interesse', 6);
+
 -- ============================================================
 -- Fim do schema. Depois de rodar isso, crie os 4 usuários em
 -- Authentication → Users (veja o passo a passo no README.md).
