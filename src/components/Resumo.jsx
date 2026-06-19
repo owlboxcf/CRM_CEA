@@ -16,12 +16,23 @@ export function ResumoTab({ leads, atividades, vendas, planos }) {
     })
     .reduce((s, v) => s + Number(v.valor_total || 0), 0);
 
-  const recorrenciaMensal = vendasFiltradas
-    .filter((v) => {
-      const p = planoPorNome[v.plano];
-      return p && p.forma === 'Recorrência';
-    })
-    .reduce((s, v) => s + Number(v.valor_total || 0), 0);
+  // MRR atual: pega só a venda mais recente de cada contrato recorrente
+  // (aluno + plano), em todo o histórico, pra não somar renovações
+  // antigas do mesmo contrato como se fossem receita recorrente extra.
+  const ultimaPorContrato = new Map();
+  vendas.forEach((v) => {
+    const p = planoPorNome[v.plano];
+    if (!p || p.forma !== 'Recorrência') return;
+    const chave = `${v.id_lead || v.id}|${v.plano}`;
+    const atual = ultimaPorContrato.get(chave);
+    if (!atual || new Date(v.data) > new Date(atual.data)) {
+      ultimaPorContrato.set(chave, v);
+    }
+  });
+  const recorrenciaMensal = Array.from(ultimaPorContrato.values()).reduce(
+    (s, v) => s + Number(v.valor_total || 0),
+    0
+  );
 
   const projetado = contratado + recorrenciaMensal * 12;
   const receitaCaixa = vendasFiltradas.reduce((s, v) => s + Number(v.receita_recebida || 0), 0);
