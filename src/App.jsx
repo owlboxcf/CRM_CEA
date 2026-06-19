@@ -218,7 +218,7 @@ export default function App() {
           />
         )}
         {activeTab === 'resumo' && isGestor && (
-          <ResumoTab leads={leads} atividades={atividades} vendas={vendas} planos={planos} />
+          <ResumoTab leads={leads} atividades={atividades} vendas={vendas} planos={planos} vendedores={vendedores} />
         )}
         {activeTab === 'config' && isGestor && (
           <ConfiguracoesTab opcoes={opcoes} onAddOpcao={handleAddOpcao} onRemoveOpcao={handleRemoveOpcao} />

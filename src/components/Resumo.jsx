@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { C } from '../theme';
 import { StatRow, MonthFilter } from './UI';
 import { STATUS_LEAD, fmtMoney, monthKey, diasDesde } from '../lib/business';
 
-export function ResumoTab({ leads, atividades, vendas, planos }) {
+export function ResumoTab({ leads, atividades, vendas, planos, vendedores }) {
   const [mes, setMes] = useState('all');
+  const [vendedorAberto, setVendedorAberto] = useState(null);
   const vendasFiltradas = mes === 'all' ? vendas : vendas.filter((v) => monthKey(v.data) === mes);
 
   const planoPorNome = Object.fromEntries(planos.map((p) => [p.nome, p]));
@@ -19,6 +21,9 @@ export function ResumoTab({ leads, atividades, vendas, planos }) {
   // MRR atual: pega só a venda mais recente de cada contrato recorrente
   // (aluno + plano), em todo o histórico, pra não somar renovações
   // antigas do mesmo contrato como se fossem receita recorrente extra.
+  // Usa receita_recebida (o valor da parcela/1º pagamento), não
+  // valor_total — em plano recorrente não existe "valor total do
+  // contrato" fechado, só a mensalidade que de fato é cobrada.
   const ultimaPorContrato = new Map();
   vendas.forEach((v) => {
     const p = planoPorNome[v.plano];
@@ -30,7 +35,7 @@ export function ResumoTab({ leads, atividades, vendas, planos }) {
     }
   });
   const recorrenciaMensal = Array.from(ultimaPorContrato.values()).reduce(
-    (s, v) => s + Number(v.valor_total || 0),
+    (s, v) => s + Number(v.receita_recebida || 0),
     0
   );
 
@@ -50,6 +55,27 @@ export function ResumoTab({ leads, atividades, vendas, planos }) {
     const ultima = Math.max(...ats.map((a) => new Date(a.data).getTime()));
     return diasDesde(new Date(ultima).toISOString()) > 7;
   });
+
+  const porVendedor = (vendedores || [])
+    .map((vd) => {
+      const vendasVd = vendasFiltradas.filter((v) => v.id_vendedor === vd.id);
+      const leadsVd = leads.filter((l) => l.id_vendedor === vd.id);
+      const faturamento = vendasVd
+        .filter((v) => {
+          const p = planoPorNome[v.plano];
+          return p && p.forma !== 'Recorrência';
+        })
+        .reduce((s, v) => s + Number(v.valor_total || 0), 0);
+      const comissao = vendasVd.reduce((s, v) => s + Number(v.comissao_vendedor || 0), 0);
+      return {
+        vendedor: vd,
+        faturamento,
+        comissao,
+        statusCounts: STATUS_LEAD.map((s) => ({ s, n: leadsVd.filter((l) => l.status === s).length })),
+        totalLeads: leadsVd.length,
+      };
+    })
+    .sort((a, b) => b.comissao - a.comissao);
 
   return (
     <div className="px-4 pt-4 pb-24">
@@ -85,6 +111,54 @@ export function ResumoTab({ leads, atividades, vendas, planos }) {
           <StatRow key={s} label={s} value={leads.filter((l) => l.status === s).length} />
         ))}
       </div>
+
+      {porVendedor.length > 0 && (
+        <>
+          <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: C.accent }}>
+            Por vendedor
+          </p>
+          <div className="mb-5">
+            {porVendedor.map(({ vendedor: vd, faturamento, comissao, statusCounts, totalLeads }) => {
+              const aberto = vendedorAberto === vd.id;
+              return (
+                <div
+                  key={vd.id}
+                  className="rounded-xl px-4 mb-2.5"
+                  style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}
+                >
+                  <button
+                    className="w-full flex items-center justify-between py-2.5"
+                    onClick={() => setVendedorAberto(aberto ? null : vd.id)}
+                  >
+                    <span className="font-bold text-sm" style={{ color: C.text }}>
+                      {vd.nome}
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-sm" style={{ color: C.accent }}>
+                        {fmtMoney(comissao)}
+                      </span>
+                      {aberto ? (
+                        <ChevronUp size={16} style={{ color: C.textMuted }} />
+                      ) : (
+                        <ChevronDown size={16} style={{ color: C.textMuted }} />
+                      )}
+                    </span>
+                  </button>
+                  {aberto && (
+                    <div className="pb-2">
+                      <StatRow label="Faturamento (contratado)" value={fmtMoney(faturamento)} />
+                      <StatRow label="Leads no funil" value={totalLeads} />
+                      {statusCounts.map(({ s, n }) => (
+                        <StatRow key={s} label={s} value={n} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: C.red }}>
         Alertas

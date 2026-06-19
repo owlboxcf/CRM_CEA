@@ -17,6 +17,7 @@ export function VendaForm({ leadId, leads, planos, onClose, onSave, meuPerfil })
 
   const planoObj = planos.find((p) => p.nome === planoNome);
   const preview = planoObj ? calcVenda(planoObj, tipo) : null;
+  const isRecorrente = planoObj && planoObj.forma === 'Recorrência';
 
   async function submit() {
     if (!idLead || !planoNome || !valorTotal) return;
@@ -31,7 +32,7 @@ export function VendaForm({ leadId, leads, planos, onClose, onSave, meuPerfil })
         tipo_transacao: tipo,
         turno,
         valor_total: Number(valorTotal),
-        receita_recebida: Number(receita || valorTotal),
+        receita_recebida: Number(isRecorrente ? valorTotal : receita || valorTotal),
         venda_completa: completa,
         pontos: calc.pontos,
         comissao_vendedor: calc.comissaoVendedor,
@@ -74,12 +75,14 @@ export function VendaForm({ leadId, leads, planos, onClose, onSave, meuPerfil })
       <Field label="Professor responsável">
         <Input value={professor} onChange={setProfessor} placeholder="Nome do professor" />
       </Field>
-      <Field label="Valor total do contrato (R$)">
+      <Field label={isRecorrente ? 'Valor da mensalidade (R$)' : 'Valor total do contrato (R$)'}>
         <Input value={valorTotal} onChange={setValorTotal} placeholder="0,00" type="number" />
       </Field>
-      <Field label="Receita recebida agora (R$)">
-        <Input value={receita} onChange={setReceita} placeholder="0,00" type="number" />
-      </Field>
+      {!isRecorrente && (
+        <Field label="Receita recebida agora (R$)">
+          <Input value={receita} onChange={setReceita} placeholder="0,00" type="number" />
+        </Field>
+      )}
       <Field label="Venda completa? (avaliação + ficha)">
         <Select value={completa} onChange={setCompleta} options={['Completa', 'Incompleta']} />
       </Field>
