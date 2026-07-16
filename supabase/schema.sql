@@ -232,12 +232,51 @@ create policy "ponto: ver os próprios ou todos se gestor"
   to authenticated
   using (is_gestor() or id_vendedor = auth.uid());
 
-create policy "ponto: cada um só registra o próprio"
+create policy "ponto: gestor pode inserir para qualquer vendedor"
   on public.ponto_registros for insert
   to authenticated
-  with check (id_vendedor = auth.uid());
+  with check (is_gestor() or id_vendedor = auth.uid());
+
+create policy "ponto: gestor pode atualizar qualquer registro"
+  on public.ponto_registros for update
+  to authenticated
+  using (is_gestor())
+  with check (is_gestor());
+
+create policy "ponto: gestor pode excluir qualquer registro"
+  on public.ponto_registros for delete
+  to authenticated
+  using (is_gestor());
+
 -- ------------------------------------------------------------
--- 7. OPÇÕES CONFIGURÁVEIS (listas editáveis pelo Gestor: canais
+-- 7. FERIADOS
+-- ------------------------------------------------------------
+create table public.feriados (
+  id uuid primary key default gen_random_uuid(),
+  data date not null unique,
+  descricao text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.feriados enable row level security;
+
+create policy "feriados: qualquer logado pode ver"
+  on public.feriados for select
+  to authenticated
+  using (true);
+
+create policy "feriados: só gestor cria"
+  on public.feriados for insert
+  to authenticated
+  with check (is_gestor());
+
+create policy "feriados: só gestor exclui"
+  on public.feriados for delete
+  to authenticated
+  using (is_gestor());
+
+-- ------------------------------------------------------------
+-- 8. OPÇÕES CONFIGURÁVEIS (listas editáveis pelo Gestor: canais
 -- de captação, canais de contato, resultados de atividade).
 -- São só sugestões para os formulários — os campos canal/resultado
 -- em leads/atividades continuam texto livre, sem FK pra aqui.

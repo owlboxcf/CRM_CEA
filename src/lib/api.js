@@ -150,3 +150,48 @@ export async function registrarPonto(idVendedor, tipo) {
   if (error) throw error;
   return data;
 }
+
+export async function addPontoManual({ id_vendedor, tipo, data_hora }) {
+  const { data, error } = await supabase
+    .from('ponto_registros')
+    .insert({ id_vendedor, tipo, data_hora })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updatePontoRegistro(id, data_hora) {
+  const { data, error } = await supabase
+    .from('ponto_registros')
+    .update({ data_hora })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deletePontoRegistro(id) {
+  const { error } = await supabase.from('ponto_registros').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ---------- Feriados ----------
+
+export async function getFeriados() {
+  const { data, error } = await supabase.from('feriados').select('*').order('data');
+  if (error) throw error;
+  return data;
+}
+
+export async function createFeriado({ data, descricao }) {
+  const { data: row, error } = await supabase.from('feriados').insert({ data, descricao }).select().single();
+  if (error) throw error;
+  return row;
+}
+
+export async function deleteFeriado(id) {
+  const { error } = await supabase.from('feriados').delete().eq('id', id);
+  if (error) throw error;
+}

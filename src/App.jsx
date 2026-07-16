@@ -30,6 +30,12 @@ import {
   getTodasOpcoes,
   createOpcao,
   deleteOpcao,
+  addPontoManual,
+  updatePontoRegistro,
+  deletePontoRegistro,
+  getFeriados,
+  createFeriado,
+  deleteFeriado,
 } from './lib/api';
 
 function TelaCarregando() {
@@ -52,6 +58,7 @@ export default function App() {
   const [pontos, setPontos] = useState([]);
   const [ranking, setRanking] = useState([]);
   const [opcoes, setOpcoes] = useState([]);
+  const [feriados, setFeriados] = useState([]);
   const [activeTab, setActiveTab] = useState('leads');
   const [loadingDados, setLoadingDados] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState('');
@@ -75,7 +82,7 @@ export default function App() {
     try {
       const perfil = await getMeuPerfil(session.user.id);
       setMeuPerfil(perfil);
-      const [vend, pl, l, a, v, r, p, op] = await Promise.all([
+      const [vend, pl, l, a, v, r, p, op, fer] = await Promise.all([
         getVendedores(),
         getPlanos(),
         getLeads(),
@@ -84,6 +91,7 @@ export default function App() {
         getRanking(),
         getPontoRegistros(),
         getTodasOpcoes(),
+        getFeriados(),
       ]);
       setVendedores(vend);
       setPlanos(pl);
@@ -93,6 +101,7 @@ export default function App() {
       setRanking(r);
       setPontos(p);
       setOpcoes(op);
+      setFeriados(fer);
     } catch (e) {
       console.error(e);
       setErroCarregamento(
@@ -189,6 +198,31 @@ export default function App() {
     setPontos((prev) => [novo, ...prev]);
   }
 
+  async function handleAddPontoManual(dados) {
+    const novo = await addPontoManual(dados);
+    setPontos((prev) => [novo, ...prev].sort((a, b) => new Date(b.data_hora) - new Date(a.data_hora)));
+  }
+
+  async function handleUpdatePonto(id, data_hora) {
+    const atualizado = await updatePontoRegistro(id, data_hora);
+    setPontos((prev) => prev.map((p) => (p.id === id ? atualizado : p)));
+  }
+
+  async function handleDeletePonto(id) {
+    await deletePontoRegistro(id);
+    setPontos((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  async function handleAddFeriado(dados) {
+    const novo = await createFeriado(dados);
+    setFeriados((prev) => [...prev, novo].sort((a, b) => (a.data < b.data ? -1 : 1)));
+  }
+
+  async function handleDeleteFeriado(id) {
+    await deleteFeriado(id);
+    setFeriados((prev) => prev.filter((f) => f.id !== id));
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: C.bg }}>
       <div className="max-w-md mx-auto" style={{ backgroundColor: C.bg }}>
@@ -214,7 +248,13 @@ export default function App() {
             meuPerfil={meuPerfil}
             isGestor={isGestor}
             vendedores={vendedores}
+            feriados={feriados}
             onRegistrar={handleRegistrarPonto}
+            onAddManual={handleAddPontoManual}
+            onDeletePonto={handleDeletePonto}
+            onUpdatePonto={handleUpdatePonto}
+            onAddFeriado={handleAddFeriado}
+            onDeleteFeriado={handleDeleteFeriado}
           />
         )}
         {activeTab === 'resumo' && isGestor && (
